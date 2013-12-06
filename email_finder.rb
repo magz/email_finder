@@ -1,20 +1,31 @@
-#!/usr/bin/env ruby
 require "open-uri"
+require "net/http"
 require "json"
 
-
-X_SESSION_TOKEN = 'BAgiX0FtcFMydVcyMnE0OUs1elN4N3BiZjdJekdaQzR5b201SFM1R0ZaUGJIZnUxUEI0Vm9EcThsWEM5d1FOeUVDV0otLW91dndka2ZpRE1vR1dPUDM4TVZ1OXc9PQ==--87f771d7a58bef7c6718365744c046b54b335735'
 def request_headers
-  {"X-Session-Token"=> X_SESSION_TOKEN}
+  {
+    "X-Session-Token" => ENV['RAPPORTIVE_SESSION_TOKEN'],
+    "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36",
+    "Referer" => "https://mail.google.com/mail",
+    "Origin" => "https://mail.google.com",
+    "Host" => "profiles.rapportive.com",
+    "Accept" => "*/*",
+    "Accept-Language" => "en-US,en;q=0.8"
+  }
 end
-def request_results
 
+def request_results
   address_permutations.map do |addr|
     puts "asking about: #{addr}"
     request_url = "https://profiles.rapportive.com/contacts/email/#{addr}?viewport_height=782&view_type=cv&user_email=michael%40namely.com&client_version=ChromeExtension+rapportive+1.4.1&client_stamp=1386264608"
 
-    request_result = open(request_url, request_headers)
-    read_request_result = JSON.parse(request_result.read)
+    uri = URI.parse(request_url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    request = Net::HTTP::Get.new(uri.path, request_headers)
+    response = http.request(request)
+
+    read_request_result = JSON.parse(response.body)
 
     if read_request_result["contact"]["first_name"] != ""
       [addr.gsub("%40", "@"), true]
@@ -39,8 +50,6 @@ def address_permutations
   addresses << @first_name + @last_name[0]
 
   addresses << @last_name + @first_name[0]
-
-
   addresses.map {|addr| addr + "%40#{@domain}"}
 end
 
