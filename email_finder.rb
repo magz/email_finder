@@ -1,4 +1,5 @@
 require "open-uri"
+require "net/http"
 require "json"
 
 def request_headers
@@ -18,8 +19,13 @@ def request_results
     puts "asking about: #{addr}"
     request_url = "https://profiles.rapportive.com/contacts/email/#{addr}?viewport_height=782&view_type=cv&user_email=michael%40namely.com&client_version=ChromeExtension+rapportive+1.4.1&client_stamp=1386264608"
 
-    request_result = open(request_url, request_headers)
-    read_request_result = JSON.parse(request_result.read)
+    uri = URI.parse(request_url)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    request = Net::HTTP::Get.new(uri.path, request_headers)
+    response = http.request(request)
+
+    read_request_result = JSON.parse(response.body)
 
     if read_request_result["contact"]["first_name"] != ""
       [addr.gsub("%40", "@"), true]
