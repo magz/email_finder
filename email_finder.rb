@@ -2,9 +2,9 @@ require "open-uri"
 require "net/http"
 require "json"
 
-def request_headers
+def request_headers_without_token
   {
-    "X-Session-Token" => ENV['RAPPORTIVE_SESSION_TOKEN'],
+    # "X-Session-Token" => ENV['RAPPORTIVE_SESSION_TOKEN'],
     "User-Agent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36",
     "Referer" => "https://mail.google.com/mail",
     "Origin" => "https://mail.google.com",
@@ -15,9 +15,17 @@ def request_headers
 end
 
 def request_results
+  random_email = rand(36**8).to_s(36) + "%40gmail.com"
+  request_headers = request_headers_without_token
+
+  request_url = "https://rapportive.com/login_status?user_email=#{random_email}"
+  puts "getting auth token for email #{random_email}"
+  response = open(request_url)
+  request_headers["X-Session-Token"] = JSON.parse(response.read)["session_token"]
+
+
   address_permutations.map do |addr|
-    puts "asking about: #{addr}"
-    request_url = "https://profiles.rapportive.com/contacts/email/#{addr}?viewport_height=782&view_type=cv&user_email=michael%40namely.com&client_version=ChromeExtension+rapportive+1.4.1&client_stamp=1386264608"
+    request_url = "https://profiles.rapportive.com/contacts/email/#{addr}?viewport_height=782&view_type=cv&user_email=#{random_email}&client_version=ChromeExtension+rapportive+1.4.1"
 
     uri = URI.parse(request_url)
     http = Net::HTTP.new(uri.host, uri.port)
